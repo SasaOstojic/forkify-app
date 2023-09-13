@@ -107,7 +107,6 @@ class RecipeView extends View {
         </a>
       </div>
         `
-
     }
 
     _generateMarkupIngredient(ing) {

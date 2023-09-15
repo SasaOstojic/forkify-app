@@ -1,10 +1,12 @@
 import * as model from './model.js';
-
+import {MODAL_CLOSE_SEC} from './config.js'
 import recipeView from './recipeView.js';
 import searchView from './searchView.js';
 import resultsView from './resultsView.js';
 import paginationView from './paginationView.js';
 import bookmarksView from './bookmarksView.js';
+import addRecipeView from './addRecipeView.js';
+import { MODAL_CLOSE_SEC } from './config.js';
 
 const recipeContainer = document.querySelector('.recipe');
 // console.log(recipeContainer)
@@ -20,6 +22,7 @@ if(module.hot){
 const controllRecipes = async function(){
   //Loading recipe
   try{
+
     const id = window.location.hash.slice(1);
     
     if(!id) return;
@@ -32,7 +35,6 @@ const controllRecipes = async function(){
     
     //render
     recipeView.render(model.state.recipe);
-    
     
     // console.log(recipeContainer)
 
@@ -90,6 +92,35 @@ const controlBookmarks = function(){
   bookmarksView.render(model.state.bookmarks)
 }
 
+const controlAddRecipe = async function(newRecipe){
+  try{
+
+     //Show loading spinner
+     addRecipeView.renderSpinner();
+
+    await model.uploadRecipe(newRecipe);
+    console.log(model.state.recipe)
+    // Render recipe
+    recipeView.render(model.state.recipe)
+
+     //Success message
+     addRecipeView.renderMessage();
+
+     //Render bookmark view
+     bookmarksView.render(model.state.bookmarks);
+
+     //Change ID in the url
+     window.history.pushState(null, '', `#${model.state.recipe.id}`)
+
+    //Close form popu
+    setTimeout(() => {
+      addRecipeView.toggleWindow();
+    }, MODAL_CLOSE_SEC * 1000)
+  }catch(err){
+    addRecipeView.renderError(err.message)
+  }
+}
+
 // ['hashchange', 'load'].forEach(ev => window.addEventListener(ev, controllRecipes));
 const init = function() {
   bookmarksView.addHndlerRender(controlBookmarks)
@@ -98,6 +129,7 @@ const init = function() {
   recipeView.addHandlerAddBookmark(controlAddBookmark)
   searchView.addHandlerSearch(controlSearchResults)
   paginationView.addHandlerClick(controlPagination);
+  addRecipeView.addHandlerUpload(controlAddRecipe);
 }
 
 init();

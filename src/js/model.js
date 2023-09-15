@@ -1,5 +1,6 @@
-import { API_URL, RES_PER_PAGE } from "./config";
-import { getJSON } from "./helpers";
+import { API_URL, RES_PER_PAGE, KEY } from "./config";
+// import { Ajax, setJSON } from "./helpers";
+import { Ajax } from "./helpers";
 
 export const state = {
     recipe: {},
@@ -31,7 +32,8 @@ export const loadRecipe = async function(id){
 
     try {
 
-       const data = await getJSON(`${API_URL}${id}`)
+       const data = await Ajax(`${API_URL}${id}`)
+       state.recipe = createRecipeObject(data);
     
         const {recipe} = data.data;
     
@@ -59,7 +61,7 @@ export const loadRecipe = async function(id){
 export const loadSearchResults = async function(query){
     try{
         state.search.query = query;
-        const data = await getJSON(`${API_URL}?search=${query}`)
+        const data = await Ajax(`${API_URL}?search=${query}`)
         state.search.results = data.data.recipes.map(rec => {
             return {
                 id: rec.id,
@@ -119,3 +121,35 @@ if(storage) state.bookmarks = JSON.parse(storage)
 }
 
 init();
+
+export const uploadRecipe = async(newRecipe) => {
+    try{
+
+        const ingredients = Object.entries(newRecipe).filter(entry => entry[0].startsWith('ingredient') && entry[1] !== '')
+        .map(ing => {
+            const ingArr = ing[1].replaceAll(' ','').split(',');
+            if(ingArr.length !== 3) throw new Error('Wrong ingredient format.')
+            const [quantity, unit, description] = ingArr;
+        return {quantity: quantity ? +quantity: null, unit, description}
+    });
+
+    const recipe = {
+        title: newRecipe.title,
+        source_url: newRecipe.sourceUrl,
+        image_url: newRecipe.image,
+        publisher: newRecipe.publisher,
+        cooking_time: +newRecipe.cookingTime,
+        servings: +newRecipe.servings,
+        ingredients, 
+    }
+
+    console.log(recipe)
+
+    const data = await Ajax(`${API_URL}?key=${KEY}`, recipe);
+    state.recipe = createRecipeObject(data);
+    addBookmark(state.recipe);
+    }catch(err){
+        throw err;
+    }
+}
+
